@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"io"
-	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"gomods.euniz.com/gomods/ai-engine/prompts"
+	"gomods.euniz.com/gomods/ai-engine/utils"
 )
 
 type ItineraryRequestBody struct {
@@ -14,24 +15,52 @@ type ItineraryRequestBody struct {
 	Preferences string `json:preferences`
 }
 
+func HandleGetQuestion(ctx *gin.Context) {
+
+}
+
+func HandleGetItinerary(ctx *gin.Context) {
+	body := new(ItineraryRequestBody)
+	err := utils.GetJSONBody(ctx, body)
+	if err != nil {
+		return
+	}
+
+	prompt := prompts.GetItineraryGeneratePrompt(body.Destination, body.Duration, body.Preferences)
+
+	result := "```json {\"name\": \"Alice\", \"age\": 30, \"city\": \"New York\", \"occupation\": \"Software Engineer\", \"is_married\": true} ```"
+
+	result = strings.Replace(result, "```json", "", -1)
+	result = strings.Replace(result, "```", "", -1)
+	result = strings.TrimSpace(result)
+
+	bytes, err := json.Marshal(result)
+
+	// bodyBytes, err := io.ReadAll(ctx.Request.Body)
+	// if err != nil {
+	// 	ctx.JSON(http.StatusBadRequest, gin.H{
+	// 		"message": "Bad Request, Unable to read Request Body.",
+	// 		"error":   "ERR_BAD_REQUEST_BODY",
+	// 	})
+	// 	return
+	// }
+	// body := new(ItineraryRequestBody)
+	// json.Marshal(body)
+	// json.Unmarshal(bodyBytes, &body)
+	// ctx.JSON(http.StatusOK, gin.H{
+	// 	"message": "Lol",
+	// })
+}
+
 func main() {
-	r := gin.Default()
-	api := r.Group("/api")
-	api.POST("/itinerary", func(ctx *gin.Context) {
-		bodyBytes, err := io.ReadAll(ctx.Request.Body)
-		body := new(ItineraryRequestBody)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"message": "Bad Request, Unable to read Request Body",
-				"error":   "ERR_BAD_REQUEST_BODY",
-			})
-			return
-		}
-		http.Get()
-		json.Unmarshal(bodyBytes, &body)
-		ctx.JSON(http.StatusOK, gin.H{
-			"message": "Lol",
-		})
-	})
-	r.Run(":5000") // listen and serve on 0.0.0.0:8080
+	// The Main Gin Server
+	server := gin.Default()
+
+	// The API Route Group
+	api := server.Group("/api")
+
+	api.POST("/itinerary", HandleGetItinerary)
+	api.POST("/questions", HandleGetQuestion)
+
+	server.Run(":5000") // listen and serve on 0.0.0.0:5000
 }
