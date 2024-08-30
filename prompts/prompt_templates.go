@@ -1,0 +1,9 @@
+package prompts
+
+import "fmt"
+
+const GENERATE_PROMPT = "Please do not give any output other than JSON, please make sure you give only JSON output. Generate an itinerary for a person to travel to %v for a duration of %v, they prefer travelling to places like %v."
+
+func GetItineraryGeneratePrompt(destination string, duration string, preferences string) string {
+	return fmt.Sprintf(GENERATE_PROMPT, destination, duration, preferences)
+}

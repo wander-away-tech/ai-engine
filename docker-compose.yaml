@@ -1,0 +1,16 @@
+services:
+  ai-engine:
+    container_name: ai-engine
+    hostname: ai-engine
+    image: cosmtrek/air
+    restart: unless-stopped
+    working_dir: /go/src/gomods.euniz.com/gomods/ai-engine
+    volumes:
+      - .:/go/src/gomods.euniz.com/gomods/ai-engine
+    networks:
+      - ai-engine-net
+    ports:
+      - 5180:5000
+
+networks:
+  ai-engine-net:
