@@ -2,33 +2,21 @@ package main
 
 import (
 	"encoding/json"
+	//"go/types"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gomods.euniz.com/gomods/ai-engine/prompts"
+	"gomods.euniz.com/gomods/ai-engine/structures"
 	"gomods.euniz.com/gomods/ai-engine/utils"
 )
 
-type ItineraryRequestBody struct {
-	Destination string `json:destination`
-	Duration    string `json:duration`
-	Preferences string `json:preferences`
+func isStructEmpty(s structures.GetQuestionsRequestBody) bool {
+	return len(s.Questions) == 0
 }
 
-func HandleGetQuestion(ctx *gin.Context) {
-
-}
-
-func HandleGetItinerary(ctx *gin.Context) {
-	body := new(ItineraryRequestBody)
-	err := utils.GetJSONBody(ctx, body)
-	if err != nil {
-		return
-	}
-
-	prompt := prompts.GetItineraryGeneratePrompt(body.Destination, body.Duration, body.Preferences)
-
-	result := "```json {\"name\": \"Alice\", \"age\": 30, \"city\": \"New York\", \"occupation\": \"Software Engineer\", \"is_married\": true} ```"
+func getResult(ctx *gin.Context, prompt string) {
+	result := ""
 
 	result = strings.Replace(result, "```json", "", -1)
 	result = strings.Replace(result, "```", "", -1)
@@ -36,20 +24,46 @@ func HandleGetItinerary(ctx *gin.Context) {
 
 	bytes, err := json.Marshal(result)
 
-	// bodyBytes, err := io.ReadAll(ctx.Request.Body)
-	// if err != nil {
-	// 	ctx.JSON(http.StatusBadRequest, gin.H{
-	// 		"message": "Bad Request, Unable to read Request Body.",
-	// 		"error":   "ERR_BAD_REQUEST_BODY",
-	// 	})
-	// 	return
-	// }
-	// body := new(ItineraryRequestBody)
-	// json.Marshal(body)
-	// json.Unmarshal(bodyBytes, &body)
-	// ctx.JSON(http.StatusOK, gin.H{
-	// 	"message": "Lol",
-	// })
+	ctx.Data(200, "application/json", bytes)
+}
+
+func HandleGetQuestion(ctx *gin.Context) {
+	body := new(structures.GetQuestionsRequestBody)
+	err := utils.GetJSONBody(ctx, body)
+	if err != nil {
+		return
+	}
+	if isStructEmpty(*body) {
+		prompt := prompts.GENERATE_INITIAL_QUESTIONS_PROMPT_BASE
+
+		getResult(ctx, prompt)
+	} else {
+		prompt := prompts.GetFollowUpQuestionsGeneratePrompt()
+
+		getResult(ctx, prompt)
+	}
+}
+
+func HandleGetItinerary(ctx *gin.Context) {
+	body := new(structures.ItineraryRequestBody)
+	err := utils.GetJSONBody(ctx, body)
+	if err != nil {
+		return
+	}
+
+	prompt := prompts.GetItineraryGeneratePrompt(body.Destination, body.Duration, body.Preferences)
+
+	getResult(ctx, prompt)
+	/*result := "```json {\"name\": \"Alice\", \"age\": 30, \"city\": \"New York\", \"occupation\": \"Software Engineer\", \"is_married\": true} ```"
+
+	result = strings.Replace(result, "```json", "", -1)
+	result = strings.Replace(result, "```", "", -1)
+	result = strings.TrimSpace(result)
+
+	bytes, err := json.Marshal(result)
+
+	ctx.Data(200, "application/json", bytes)*/
+
 }
 
 func main() {
