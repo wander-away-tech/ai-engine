@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -10,13 +11,12 @@ import (
 )
 
 type ItineraryRequestBody struct {
-	Destination string `json:destination`
-	Duration    string `json:duration`
-	Preferences string `json:preferences`
+	Destination string `json:"destination"`
+	Duration    string `json:"duration"`
+	Preferences string `json:"preferences"`
 }
 
 func HandleGetQuestion(ctx *gin.Context) {
-
 }
 
 func HandleGetItinerary(ctx *gin.Context) {
@@ -36,20 +36,7 @@ func HandleGetItinerary(ctx *gin.Context) {
 
 	bytes, err := json.Marshal(result)
 
-	// bodyBytes, err := io.ReadAll(ctx.Request.Body)
-	// if err != nil {
-	// 	ctx.JSON(http.StatusBadRequest, gin.H{
-	// 		"message": "Bad Request, Unable to read Request Body.",
-	// 		"error":   "ERR_BAD_REQUEST_BODY",
-	// 	})
-	// 	return
-	// }
-	// body := new(ItineraryRequestBody)
-	// json.Marshal(body)
-	// json.Unmarshal(bodyBytes, &body)
-	// ctx.JSON(http.StatusOK, gin.H{
-	// 	"message": "Lol",
-	// })
+	ctx.Data(http.StatusOK, "application/json", bytes)
 }
 
 func main() {
