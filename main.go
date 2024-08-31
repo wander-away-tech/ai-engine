@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-
-	//"go/types"
 	"strings"
 
 	"github.com/gin-gonic/gin"
