@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"gomods.euniz.com/gomods/ai-engine/ai"
 	"gomods.euniz.com/gomods/ai-engine/prompts"
 	"gomods.euniz.com/gomods/ai-engine/utils"
 )
@@ -28,13 +30,28 @@ func HandleGetItinerary(ctx *gin.Context) {
 
 	prompt := prompts.GetItineraryGeneratePrompt(body.Destination, body.Duration, body.Preferences)
 
-	result := "```json {\"name\": \"Alice\", \"age\": 30, \"city\": \"New York\", \"occupation\": \"Software Engineer\", \"is_married\": true} ```"
+	result, err := ai.GenerateItinerary(prompt)
 
-	result = strings.Replace(result, "```json", "", -1)
-	result = strings.Replace(result, "```", "", -1)
-	result = strings.TrimSpace(result)
+	if err != nil {
+		fmt.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error! The LLM response was not formatted as json!",
+			"error":   "ERR_LLM_RESPONSE_NOT_JSON_ONLY",
+		})
+	}
 
-	bytes, err := json.Marshal(result)
+	*result = strings.Replace(*result, "```json", "", -1)
+	*result = strings.Replace(*result, "```", "", -1)
+	*result = strings.TrimSpace(*result)
+
+	bytes, err := json.Marshal(*result)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error! The LLM response was not formatted as json!",
+			"error":   "ERR_LLM_RESPONSE_NOT_JSON_ONLY",
+		})
+	}
 
 	ctx.Data(http.StatusOK, "application/json", bytes)
 }
