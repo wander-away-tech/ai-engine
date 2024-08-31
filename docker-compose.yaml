@@ -12,5 +12,18 @@ services:
     ports:
       - 5180:5000
 
+  ollama:
+    container_name: ollama
+    hostname: ollama
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ~/.ollama:/root/.ollama
+      - /usr/share/ollama/.ollama/models:/usr/share/ollama/.ollama/models
+    networks:
+      - ai-engine-net
+    environment:
+      - OLLAMA_MODELS=/usr/share/ollama/.ollama/models
+
 networks:
   ai-engine-net:
