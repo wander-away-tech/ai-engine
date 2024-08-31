@@ -9,29 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"gomods.euniz.com/gomods/ai-engine/ai"
 	"gomods.euniz.com/gomods/ai-engine/prompts"
+	"gomods.euniz.com/gomods/ai-engine/structures"
 	"gomods.euniz.com/gomods/ai-engine/utils"
 )
 
-type ItineraryRequestBody struct {
-	Destination string `json:"destination"`
-	Duration    string `json:"duration"`
-	Preferences string `json:"preferences"`
+func isStructEmpty(s structures.GetQuestionsRequestBody) bool {
+	return len(s.Questions) == 0
 }
 
-func HandleGetQuestion(ctx *gin.Context) {
-}
-
-func HandleGetItinerary(ctx *gin.Context) {
-	body := new(ItineraryRequestBody)
-	err := utils.GetJSONBody(ctx, body)
-	if err != nil {
-		return
-	}
-
-	prompt := prompts.GetItineraryGeneratePrompt(body.Destination, body.Duration, body.Preferences)
-
+func sendResult(ctx *gin.Context, prompt string) {
 	result, err := ai.GenerateItinerary(prompt)
-
 	if err != nil {
 		fmt.Println(err.Error())
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -44,8 +31,7 @@ func HandleGetItinerary(ctx *gin.Context) {
 	*result = strings.Replace(*result, "```", "", -1)
 	*result = strings.TrimSpace(*result)
 
-	bytes, err := json.Marshal(*result)
-
+	bytes, err := json.Marshal(result)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Error! The LLM response was not formatted as json!",
@@ -53,7 +39,42 @@ func HandleGetItinerary(ctx *gin.Context) {
 		})
 	}
 
-	ctx.Data(http.StatusOK, "application/json", bytes)
+	ctx.Data(200, "application/json", bytes)
+}
+
+func HandleGetQuestion(ctx *gin.Context) {
+	body := new(structures.GetQuestionsRequestBody)
+	err := utils.GetJSONBody(ctx, body)
+	if err != nil {
+		return
+	}
+	if isStructEmpty(*body) {
+		prompt := prompts.GENERATE_INITIAL_QUESTIONS_PROMPT_BASE
+
+		sendResult(ctx, prompt)
+	} else {
+		prompt, err := prompts.GetFollowUpQuestionsGeneratePrompt(body.Questions)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Error! The JSON body did not have previous questions!",
+				"error":   "ERR_JSON_QUESTIONS_NOT_FOUND",
+			})
+		}
+
+		sendResult(ctx, prompt)
+	}
+}
+
+func HandleGetItinerary(ctx *gin.Context) {
+	body := new(structures.ItineraryRequestBody)
+	err := utils.GetJSONBody(ctx, body)
+	if err != nil {
+		return
+	}
+
+	prompt := prompts.GetItineraryGeneratePrompt(body.Destination, body.Duration, body.Preferences)
+
+	sendResult(ctx, prompt)
 }
 
 func main() {
