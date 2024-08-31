@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+
 	//"go/types"
 	"strings"
 
@@ -15,7 +17,7 @@ func isStructEmpty(s structures.GetQuestionsRequestBody) bool {
 	return len(s.Questions) == 0
 }
 
-func getResult(ctx *gin.Context, prompt string) {
+func sendResult(ctx *gin.Context, prompt string) {
 	result := ""
 
 	result = strings.Replace(result, "```json", "", -1)
@@ -23,6 +25,12 @@ func getResult(ctx *gin.Context, prompt string) {
 	result = strings.TrimSpace(result)
 
 	bytes, err := json.Marshal(result)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error! The LLM response was not formatted as json!",
+			"error":   "ERR_LLM_RESPONSE_NOT_JSON_ONLY",
+		})
+	}
 
 	ctx.Data(200, "application/json", bytes)
 }
@@ -36,11 +44,17 @@ func HandleGetQuestion(ctx *gin.Context) {
 	if isStructEmpty(*body) {
 		prompt := prompts.GENERATE_INITIAL_QUESTIONS_PROMPT_BASE
 
-		getResult(ctx, prompt)
+		sendResult(ctx, prompt)
 	} else {
-		prompt := prompts.GetFollowUpQuestionsGeneratePrompt()
+		prompt, err := prompts.GetFollowUpQuestionsGeneratePrompt(body.Questions)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Error! The JSON body did not have previous questions!",
+				"error":   "ERR_JSON_QUESTIONS_NOT_FOUND",
+			})
+		}
 
-		getResult(ctx, prompt)
+		sendResult(ctx, prompt)
 	}
 }
 
@@ -53,7 +67,7 @@ func HandleGetItinerary(ctx *gin.Context) {
 
 	prompt := prompts.GetItineraryGeneratePrompt(body.Destination, body.Duration, body.Preferences)
 
-	getResult(ctx, prompt)
+	sendResult(ctx, prompt)
 	/*result := "```json {\"name\": \"Alice\", \"age\": 30, \"city\": \"New York\", \"occupation\": \"Software Engineer\", \"is_married\": true} ```"
 
 	result = strings.Replace(result, "```json", "", -1)
